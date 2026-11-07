@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Divide and Conquer Visualizer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 0; background: #f4f6fa; color: #1c2333; }
+  header { background: #1c2333; color: white; padding: 12px 20px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  header h1 { font-size: 18px; margin: 0 16px 0 0; }
+  select, button { font-size: 14px; padding: 6px 12px; border-radius: 6px; border: 1px solid #bbb; }
+  button { cursor: pointer; background: #fff; } button:hover { background: #eef; }
+  button.primary { background: #3b6df0; color: white; border-color: #3b6df0; }
+  main { padding: 16px 20px; }
+  .row { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
+  .card { background: white; border-radius: 10px; padding: 14px 16px; box-shadow: 0 1px 4px #0002; }
+  .stat { min-width: 170px; } .stat .k { font-size: 12px; color: #667; } .stat .v { font-size: 20px; font-weight: 600; word-break: break-all; }
+  .controls { display: flex; gap: 8px; align-items: center; margin: 10px 0; flex-wrap: wrap; }
+  .desc { background: #eef3ff; border-left: 4px solid #3b6df0; padding: 8px 12px; border-radius: 4px; min-height: 40px; white-space: pre-wrap; }
+  .legend span { display: inline-block; margin-right: 12px; font-size: 12px; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; }
+  .node { font-family: Consolas, monospace; font-size: 12px; padding: 5px 8px; margin: 3px 0; border-radius: 4px; white-space: pre-wrap; word-break: break-all; border-left: 4px solid; }
+  .SPLIT { background: #eef3ff; border-color: #3b6df0; } .BASE { background: #fff4e5; border-color: #f08c00; } .COMBINE { background: #e9f9ee; border-color: #2f9e44; }
+  .now { outline: 2px solid #e03131; }
+  .err { color: #c92a2a; font-weight: 600; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+const fmtTime = ms => ms >= 1000 ? (ms / 1000).toFixed(2) + " s" : ms.toFixed(2) + " ms";
+
+function Stat({ k, v }) {
+  return <div className="card stat"><div className="k">{k}</div><div className="v">{v}</div></div>;
+}
+
+// step counter with Prev / Next / Play
+function useStepper(n) {
+  const [i, setI] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  useEffect(() => {
+    if (!playing) return;
+    const t = setInterval(() => setI(x => Math.min(x + 1, n - 1)), 700);
+    return () => clearInterval(t);
+  }, [playing, n]);
+  useEffect(() => { if (playing && i >= n - 1) setPlaying(false); }, [i, playing, n]);
+  return { i, setI, playing, setPlaying };
+}
+
+function Controls({ st, n }) {
+  return (
+    <div className="controls">
+      <button onClick={() => st.setI(0)}>⏮ Start</button>
+      <button onClick={() => st.setI(Math.max(0, st.i - 1))}>◀ Previous</button>
+      <button className="primary" onClick={() => st.setPlaying(!st.playing)}>{st.playing ? "⏸ Pause" : "▶ Play"}</button>
+      <button onClick={() => st.setI(Math.min(n - 1, st.i + 1))}>Next ▶</button>
+      <input type="range" min="0" max={n - 1} value={st.i} onChange={e => st.setI(+e.target.value)} />
+      <b>Step {st.i + 1} / {n}</b>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------- closest pair
+function describe(s) {
+  const n = s.pts.length;
+  if (s.type === "divide") return `DIVIDE: ${n} points. Sorted by x, split at x = ${s.xline.toFixed(3)} into left (Q) and right (R) halves.`;
+  if (s.type === "base") return `BASE CASE: only ${n} points, so check every pair. Best distance = ${s.d.toFixed(4)}`;
+  return `COMBINE: best of both halves is δ = ${s.delta.toFixed(4)}.\nThe strip (x within δ of the line) has ${s.strip.length} points. Each is compared with the next 7 by y (${s.tested.length} pairs tested).\n` +
+    (s.improved ? "Found a closer pair across the line! " : "No closer pair across the line. ") + `Best distance now = ${s.d.toFixed(4)}`;
+}
+
+function CPView({ res }) {
+  const st = useStepper(res.steps.length);
+  const s = res.steps[st.i];
+  const last = st.i === res.steps.length - 1;
+  const P = res.points, S = 600, pad = 30;
+  const xs = P.map(p => p[0]), ys = P.map(p => p[1]);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const sx = x => pad + (x - x0) / ((x1 - x0) || 1) * (S - 2 * pad);
+  const sy = y => S - pad - (y - y0) / ((y1 - y0) || 1) * (S - 2 * pad);
+  const inSub = new Set(s.pts), inStrip = new Set(s.strip || []);
+  const pt = i => [sx(P[i][0]), sy(P[i][1])];
+  return (
+    <div className="row">
+      <div className="card">
+        <svg width={S} height={S} style={{ background: "#fff" }}>
+          {s.type === "combine" && <rect x={sx(s.xline - s.delta)} width={sx(s.xline + s.delta) - sx(s.xline - s.delta)} y="0" height={S} fill="#fff3cd" />}
+          {s.xline !== undefined && <line x1={sx(s.xline)} x2={sx(s.xline)} y1="0" y2={S} stroke="#e03131" strokeWidth="2" />}
+          {(s.tested || []).map(([a, b], k) => { const [ax, ay] = pt(a), [bx, by] = pt(b);
+            return <line key={k} x1={ax} y1={ay} x2={bx} y2={by} stroke="#9c36b5" strokeDasharray="4 3" />; })}
+          {P.map((p, i) => <circle key={i} cx={sx(p[0])} cy={sy(p[1])} r={inStrip.has(i) ? 6 : 4}
+              fill={inStrip.has(i) ? "#f08c00" : inSub.has(i) ? "#3b6df0" : "#bbb"} />)}
+          {s.pair && (() => { const [ax, ay] = pt(s.pair[0]), [bx, by] = pt(s.pair[1]);
+            return <line x1={ax} y1={ay} x2={bx} y2={by} stroke={last ? "#e03131" : "#2f9e44"} strokeWidth={last ? 5 : 3} />; })()}
+        </svg>
+        <div className="legend">
+          <span><i className="dot" style={{ background: "#3b6df0" }} />current subproblem</span>
+          <span><i className="dot" style={{ background: "#f08c00" }} />strip points</span>
+          <span><i className="dot" style={{ background: "#e03131" }} />dividing line / final pair</span>
+          <span><i className="dot" style={{ background: "#2f9e44" }} />best pair so far</span>
+          <span><i className="dot" style={{ background: "#9c36b5" }} />tested pairs</span>
+        </div>
+      </div>
+      <div style={{ flex: 1, minWidth: 320 }}>
+        <Controls st={st} n={res.steps.length} />
+        <div className="desc">{describe(s)}</div>
+        {last && <div className="desc" style={{ marginTop: 10, background: "#e9f9ee", borderColor: "#2f9e44" }}>
+          FINAL ANSWER: distance = {res.distance}{"\n"}A = ({res.a[0]}, {res.a[1]}){"\n"}B = ({res.b[0]}, {res.b[1]})</div>}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------- Karatsuba
+function IMView({ res }) {
+  const st = useStepper(res.steps.length);
+  const shown = res.steps.slice(0, st.i + 1);
+  const endRef = useRef(null);
+  useEffect(() => { endRef.current && endRef.current.scrollIntoView({ block: "nearest" }); }, [st.i]);
+  const legend = { SPLIT: "split x, y into high and low halves", BASE: "small enough → schoolbook multiplication", COMBINE: "z2·10^2m + z1·10^m + z0" };
+  return (
+    <div>
+      <div className="card" style={{ marginBottom: 10, wordBreak: "break-all", fontFamily: "Consolas, monospace", fontSize: 12 }}>
+        x = {res.x}<br />y = {res.y}
+      </div>
+      <Controls st={st} n={res.steps.length} />
+      <div className="legend" style={{ marginBottom: 6 }}>
+        {Object.keys(legend).map(k => <span key={k}><b>{k}</b>: {legend[k]}</span>)}
+      </div>
+      <div className="card" style={{ maxHeight: 460, overflowY: "auto" }}>
+        {shown.map((n, k) => (
+          <div key={k} ref={k === st.i ? endRef : null} className={`node ${n.kind} ${k === st.i ? "now" : ""}`}
+               style={{ marginLeft: Math.min(n.depth, 8) * 22 }}>{n.text}</div>
+        ))}
+      </div>
+      {st.i === res.steps.length - 1 && <div className="desc" style={{ marginTop: 10, wordBreak: "break-all" }}>FINAL PRODUCT = {res.product}</div>}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------- results
+function Summary({ res }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <div className="row" style={{ marginBottom: 14 }}>
+      <Stat k="Execution time" v={fmtTime(res.time_ms)} />
+      {res.type === "cp" ? <>
+        <Stat k="Input size" v={res.n.toLocaleString() + " points"} />
+        <Stat k="Closest distance" v={res.distance} />
+        <Stat k="Point A" v={`(${res.a[0]}, ${res.a[1]})`} />
+        <Stat k="Point B" v={`(${res.b[0]}, ${res.b[1]})`} />
+      </> : <>
+        <Stat k="Input size" v={`${res.digits[0].toLocaleString()} × ${res.digits[1].toLocaleString()} digits`} />
+        <Stat k="Product digits" v={res.product_digits.toLocaleString()} />
+        <div className="card" style={{ flex: 1, minWidth: 300 }}>
+          <div className="k" style={{ fontSize: 12, color: "#667" }}>Product (first 50 … last 50 digits)</div>
+          <div style={{ fontFamily: "Consolas, monospace", wordBreak: "break-all", margin: "6px 0" }}>{res.preview}</div>
+          <button onClick={() => { navigator.clipboard.writeText(res.preview); setCopied(true); }}>{copied ? "Copied!" : "Copy preview"}</button>{" "}
+          <a href={`/api/product/${res.name}`}><button>Download full product (.txt)</button></a>
+        </div>
+      </>}
+    </div>
+  );
+}
+
+function App() {
+  const [files, setFiles] = useState([]);
+  const [name, setName] = useState("");
+  const [res, setRes] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
+  useEffect(() => {
+    fetch("/api/files").then(r => r.json()).then(f => { setFiles(f); if (f.length) setName(f[0].name); })
+      .catch(() => setErr("Cannot reach the backend. Is uvicorn running?"));
+  }, []);
+  const run = async () => {
+    setLoading(true); setErr(""); setRes(null);
+    try {
+      const r = await fetch("/api/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) });
+      if (!r.ok) throw new Error((await r.json()).detail || r.statusText);
+      setRes(await r.json());
+    } catch (e) { setErr(String(e.message || e)); }
+    setLoading(false);
+  };
+  return (
+    <>
+      <header>
+        <h1>Divide &amp; Conquer Visualizer</h1>
+        <label>Input file: <select value={name} onChange={e => setName(e.target.value)}>
+          {files.map(f => <option key={f.name} value={f.name}>{f.name} ({f.type === "cp" ? "closest pair" : "Karatsuba"}, {(f.bytes / 1024).toFixed(0)} KB)</option>)}
+        </select></label>
+        <button className="primary" onClick={run} disabled={loading || !name}>{loading ? "Running…" : "Run"}</button>
+        {loading && <span>Large files can take 30 s or more, please wait.</span>}
+      </header>
+      <main>
+        {err && <div className="err">{err}</div>}
+        {!res && !loading && !err && <div className="card">Pick a file and press <b>Run</b>. Small files (≤ 300 points or digits) show step by step; large files show the result and running time.</div>}
+        {res && <>
+          <Summary res={res} />
+          {res.mode === "steps"
+            ? (res.type === "cp" ? <CPView key={res.name} res={res} /> : <IMView key={res.name} res={res} />)
+            : <div className="card">Large input ({res.mode}): step-by-step is switched off so the browser doesn’t freeze.</div>}
+        </>}
+      </main>
+    </>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

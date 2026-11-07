@@ -1,0 +1,13 @@
+__pycache__/
+outputs/
+*.pyc
+datasets/cp03.txt
+datasets/cp04.txt
+datasets/cp05.txt
+datasets/cp06.txt
+datasets/cp07.txt
+datasets/cp09.txt
+datasets/im04.txt
+datasets/im05.txt
+datasets/im08.txt
+datasets/im09.txt
