@@ -62,17 +62,6 @@ This runs both algorithms on every file in `datasets/` and prints a table of res
 
 ---
 
-## Services (what each part does)
-
-### Backend API (`server.py`)
-
-| Endpoint | Method | What it does |
-|---|---|---|
-| `/api/files` | GET | Lists the input files in `datasets/`, with their type (closest pair or multiplication) and size. |
-| `/api/run` | POST | Runs the right algorithm on a file, measures the time, and returns the result. Body: `{"name": "cp10"}`. Small files also return the full step-by-step trace. |
-| `/api/product/{name}` | GET | Downloads the full product of a multiplication file as a `.txt` file (run the file first). |
-| `/` | GET | Serves the React page from `frontend/`. |
-
 The server detects the file type from its content, so any valid file placed in `datasets/` appears in the dropdown automatically.
 
 ### Algorithms (`algorithms.py`)
