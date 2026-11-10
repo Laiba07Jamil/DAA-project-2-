@@ -1,214 +1,1394 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Divide and Conquer Visualizer</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>DAA Algorithm Visualizer </title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
 <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
 <style>
-  body { font-family: system-ui, sans-serif; margin: 0; background: #f4f6fa; color: #1c2333; }
-  header { background: #1c2333; color: white; padding: 12px 20px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-  header h1 { font-size: 18px; margin: 0 16px 0 0; }
-  select, button { font-size: 14px; padding: 6px 12px; border-radius: 6px; border: 1px solid #bbb; }
-  button { cursor: pointer; background: #fff; } button:hover { background: #eef; }
-  button.primary { background: #3b6df0; color: white; border-color: #3b6df0; }
-  main { padding: 16px 20px; }
-  .row { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
-  .card { background: white; border-radius: 10px; padding: 14px 16px; box-shadow: 0 1px 4px #0002; }
-  .stat { min-width: 170px; } .stat .k { font-size: 12px; color: #667; } .stat .v { font-size: 20px; font-weight: 600; word-break: break-all; }
-  .controls { display: flex; gap: 8px; align-items: center; margin: 10px 0; flex-wrap: wrap; }
-  .desc { background: #eef3ff; border-left: 4px solid #3b6df0; padding: 8px 12px; border-radius: 4px; min-height: 40px; white-space: pre-wrap; }
-  .legend span { display: inline-block; margin-right: 12px; font-size: 12px; }
-  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; }
-  .node { font-family: Consolas, monospace; font-size: 12px; padding: 5px 8px; margin: 3px 0; border-radius: 4px; white-space: pre-wrap; word-break: break-all; border-left: 4px solid; }
-  .SPLIT { background: #eef3ff; border-color: #3b6df0; } .BASE { background: #fff4e5; border-color: #f08c00; } .COMBINE { background: #e9f9ee; border-color: #2f9e44; }
-  .now { outline: 2px solid #e03131; }
-  .err { color: #c92a2a; font-weight: 600; }
+  :root {
+    --bg-main: #0b0f17;
+    --bg-header: #141923;
+    --bg-card: #151b27;
+    --bg-card-hover: #1b2333;
+    --bg-canvas: #080b12;
+    --border-color: #222b3d;
+    --border-subtle: #1a2232;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --accent-blue: #0d6efd;
+    --accent-blue-hover: #0b5ed7;
+    --accent-green: #10b981;
+    --accent-amber: #f59e0b;
+    --accent-red: #ef4444;
+    --accent-purple: #a855f7;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: var(--bg-main);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Mac-style Window Header */
+  header.window-header {
+    background: var(--bg-header);
+    border-bottom: 1px solid var(--border-color);
+    padding: 10px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  
+  .dot-red { background: #ff5f56; }
+  .dot-yellow { background: #ffbd2e; }
+  .dot-green { background: #27c93f; }
+  .window-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #e2e8f0;
+    letter-spacing: 0.2px;
+  }
+
+  /* Navigation Tabs */
+  .header-tabs {
+    display: flex;
+    align-items: center;
+    background: #0f141e;
+    padding: 3px;
+    border-radius: 7px;
+    border: 1px solid var(--border-color);
+  }
+  .tab-btn {
+    padding: 6px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text-secondary);
+    border-radius: 5px;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .tab-btn:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+  }
+  .tab-btn.active {
+    background: var(--accent-blue);
+    color: #ffffff;
+    box-shadow: 0 1px 6px rgba(13, 110, 253, 0.4);
+  }
+
+  /* Main Container */
+  main {
+    max-width: 1220px;
+    margin: 0 auto;
+    padding: 24px 20px 48px;
+  }
+
+  /* Algorithm View Header */
+  .algo-heading {
+    margin-bottom: 20px;
+  }
+  .algo-heading h2 {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0 0 6px 0;
+    color: #ffffff;
+  }
+  .algo-subtitle {
+    font-size: 13px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  /* Dropdown & Controls Toolbar */
+  .selector-bar {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .selector-bar label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+  .dataset-select {
+    flex: 1;
+    min-width: 280px;
+    background: #0f141e;
+    color: #f1f5f9;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 13.5px;
+    outline: none;
+    cursor: pointer;
+  }
+  .dataset-select:focus {
+    border-color: var(--accent-blue);
+  }
+
+  /* Run Action Button (Full Width / Prominent like SS) */
+  .btn-run-action {
+    width: 100%;
+    padding: 12px 20px;
+    background: var(--accent-blue);
+    color: #ffffff;
+    border: none;
+    border-radius: 7px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.05s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .btn-run-action:hover:not(:disabled) {
+    background: var(--accent-blue-hover);
+  }
+  .btn-run-action:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* Status line below run button */
+  .status-line {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .status-line .badge-completed {
+    color: var(--accent-green);
+    font-weight: 600;
+  }
+  .status-line .badge-ready {
+    color: var(--accent-blue);
+    font-weight: 600;
+  }
+
+  /* Main Visualization Display Viewport */
+  .visualizer-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .canvas-container {
+    background: var(--bg-canvas);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    min-height: 440px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .canvas-placeholder {
+    color: var(--text-muted);
+    font-size: 15px;
+    font-weight: 500;
+    text-align: center;
+  }
+
+  /* Playback Toolbar */
+  .playback-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    background: #0f141e;
+    border: 1px solid var(--border-color);
+    border-radius: 7px;
+    padding: 8px 14px;
+    margin: 14px 0;
+  }
+  .control-btn {
+    background: #182030;
+    color: #e2e8f0;
+    border: 1px solid #28334a;
+    border-radius: 5px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .control-btn:hover:not(:disabled) {
+    background: #222d44;
+    border-color: #3b4b6b;
+  }
+  .control-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .control-btn.play-btn {
+    background: #1e3a8a;
+    border-color: #2563eb;
+    color: #93c5fd;
+    font-weight: 600;
+  }
+  .speed-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-left: 8px;
+  }
+  .step-counter {
+    margin-left: auto;
+    font-size: 13px;
+    font-weight: 600;
+    color: #f1f5f9;
+  }
+
+  /* Result Summary Details */
+  .result-banner {
+    background: #0f141e;
+    border: 1px solid var(--border-color);
+    border-radius: 7px;
+    padding: 12px 16px;
+    margin-top: 10px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 13px;
+    color: #cbd5e1;
+    line-height: 1.6;
+  }
+  .result-highlight {
+    color: #38bdf8;
+    font-weight: 600;
+  }
+  .result-success {
+    color: var(--accent-green);
+    font-weight: 600;
+  }
+
+  /* Large Dataset Notification Card (matches SS) */
+  .large-info-card {
+    border: 1px solid #28334a;
+    background: rgba(15, 20, 30, 0.7);
+    border-radius: 7px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 12px;
+  }
+
+  /* Legend */
+  .legend-bar {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 10px;
+    padding: 0 4px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  /* Step Description Card */
+  .desc-box {
+    background: #0f141e;
+    border-left: 4px solid var(--accent-blue);
+    border-radius: 0 6px 6px 0;
+    padding: 10px 14px;
+    margin-top: 10px;
+    font-size: 13px;
+    color: #e2e8f0;
+    white-space: pre-wrap;
+    line-height: 1.5;
+  }
+
+  /* Recursion Tree for Karatsuba */
+  .tree-container {
+    max-height: 480px;
+    overflow-y: auto;
+    background: var(--bg-canvas);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .tree-node {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 12px;
+    padding: 6px 10px;
+    margin: 4px 0;
+    border-radius: 4px;
+    white-space: pre-wrap;
+    word-break: break-all;
+    border-left: 4px solid;
+    transition: background 0.15s ease;
+  }
+  .tree-node.SPLIT { background: rgba(59, 130, 246, 0.12); border-color: #3b82f6; color: #93c5fd; }
+  .tree-node.BASE { background: rgba(245, 158, 11, 0.12); border-color: #f59e0b; color: #fcd34d; }
+  .tree-node.COMBINE { background: rgba(16, 185, 129, 0.12); border-color: #10b981; color: #6ee7b7; }
+  .tree-node.now { outline: 2px solid #ef4444; }
+
+  /* Browser Tab Specific Styling */
+  .browser-header {
+    margin-bottom: 20px;
+  }
+  .browser-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+  .stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 14px 18px;
+  }
+  .stat-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+  .stat-val {
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .browser-toolbar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .filter-pills {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .pill-btn {
+    background: #141a26;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .pill-btn:hover {
+    color: #fff;
+    border-color: #3b4b6b;
+  }
+  .pill-btn.active {
+    background: var(--accent-blue);
+    border-color: var(--accent-blue);
+    color: #fff;
+  }
+  .search-box {
+    background: #0f141e;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 7px 12px;
+    font-size: 13px;
+    color: #f1f5f9;
+    min-width: 240px;
+    outline: none;
+  }
+  .search-box:focus {
+    border-color: var(--accent-blue);
+  }
+
+  /* Dataset Table */
+  .table-responsive {
+    overflow-x: auto;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+  }
+  .dataset-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    text-align: left;
+  }
+  .dataset-table th {
+    background: #101520;
+    padding: 12px 16px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-color);
+    white-space: nowrap;
+  }
+  .dataset-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #1a2232;
+    color: #cbd5e1;
+  }
+  .dataset-table tr:hover td {
+    background: var(--bg-card-hover);
+  }
+  .tag {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .tag-cp { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+  .tag-im { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+  .tag-demo { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+
+  .btn-run-sm {
+    background: #1e3a8a;
+    border: 1px solid #2563eb;
+    color: #bfdbfe;
+    padding: 5px 12px;
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+  .btn-run-sm:hover {
+    background: #2563eb;
+    color: #fff;
+  }
+
+  /* Theory Reference Card */
+  .theory-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 24px;
+  }
+  .theory-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+    margin-top: 14px;
+  }
+  .theory-box {
+    background: #0f141e;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .theory-box h4 {
+    margin: 0 0 8px 0;
+    font-size: 15px;
+    color: #fff;
+  }
+  .theory-box p {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0;
+  }
+  .formula-badge {
+    display: inline-block;
+    background: #182236;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: ui-monospace, monospace;
+    font-size: 12px;
+    color: #93c5fd;
+    margin-top: 6px;
+  }
+
+  /* Error Notification */
+  .error-alert {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid var(--accent-red);
+    color: #fca5a5;
+    padding: 10px 16px;
+    border-radius: 6px;
+    margin-bottom: 14px;
+    font-size: 13px;
+  }
+
+  /* Spinner */
+  .spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    border-top-color: var(--accent-blue);
+    animation: spin 0.8s linear infinite;
+    display: inline-block;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
 </style>
 </head>
 <body>
 <div id="root"></div>
+
 <script type="text/babel">
-const { useState, useEffect, useRef } = React;
-const fmtTime = ms => ms >= 1000 ? (ms / 1000).toFixed(2) + " s" : ms.toFixed(2) + " ms";
+const { useState, useEffect, useRef, useMemo } = React;
 
-function Stat({ k, v }) {
-  return <div className="card stat"><div className="k">{k}</div><div className="v">{v}</div></div>;
-}
+// Dataset Metadata & Descriptions from DAA Benchmarks
+const DATASET_INFO = {
+  cp01: { name: "cp01", type: "cp", count: "1,000 pts", scale: "10³ points", desc: "Uniform random points in [0, 10⁶]", benchmark: "Baseline verification with uniform distribution", demo: false, seed: 1001 },
+  cp02: { name: "cp02", type: "cp", count: "10,000 pts", scale: "10⁴ points", desc: "Uniform random points in [0, 10⁶]", benchmark: "Scale test at 10,000 points", demo: false, seed: 1002 },
+  cp03: { name: "cp03", type: "cp", count: "100,000 pts", scale: "10⁵ points", desc: "Uniform random points in [0, 10⁶]", benchmark: "Medium scale test at 100,000 points", demo: false, seed: 1003 },
+  cp04: { name: "cp04", type: "cp", count: "1,000,000 pts", scale: "10⁶ points", desc: "Uniform random points in [0, 10⁶]", benchmark: "Stress test at 1,000,000 points (O(n log n))", demo: false, seed: 1004 },
+  cp05: { name: "cp05", type: "cp", count: "1,000,000 pts", scale: "10⁶ points", desc: "10 Gaussian clusters around random centers", benchmark: "Clustered distribution (dense local neighborhoods)", demo: false, seed: 1005 },
+  cp06: { name: "cp06", type: "cp", count: "1,000,000 pts", scale: "10⁶ points", desc: "Integer points in small range [0, 99]", benchmark: "Many duplicate coordinates (closest distance = 0)", demo: false, seed: 1006 },
+  cp07: { name: "cp07", type: "cp", count: "100,000 pts", scale: "10⁵ points", desc: "All points on one vertical line (x = 500,000)", benchmark: "Degenerate x-coordinates (strip stress test)", demo: false, seed: 1007 },
+  cp08: { name: "cp08", type: "cp", count: "100,000 pts", scale: "10⁵ points", desc: "400 × 250 grid with spacing 10", benchmark: "Equally spaced grid (many tied closest pairs)", demo: false, seed: 1008 },
+  cp09: { name: "cp09", type: "cp", count: "1,000,000 pts", scale: "10⁶ points", desc: "Closest pair placed across median split line", benchmark: "Cross-boundary closest pair across dividing line", demo: false, seed: 1009 },
+  cp10: { name: "cp10", type: "cp", count: "101 pts", scale: "101 points", desc: "101 random points in [0, 100]", benchmark: "Interactive step-by-step animation demo", demo: true, seed: 1010 },
 
-// step counter with Prev / Next / Play
-function useStepper(n) {
+  im01: { name: "im01", type: "im", count: "1,000 digits", scale: "10³ digits", desc: "Uniform random 1,000-digit integers", benchmark: "Small scale Karatsuba multiplication", demo: false, seed: 2001 },
+  im02: { name: "im02", type: "im", count: "10,000 digits", scale: "10⁴ digits", desc: "Uniform random 10,000-digit integers", benchmark: "Medium scale Karatsuba multiplication", demo: false, seed: 2002 },
+  im03: { name: "im03", type: "im", count: "100,000 digits", scale: "10⁵ digits", desc: "Uniform random 100,000-digit integers", benchmark: "Large scale Karatsuba multiplication", demo: false, seed: 2003 },
+  im04: { name: "im04", type: "im", count: "1,000,000 digits", scale: "10⁶ digits", desc: "Uniform random 1,000,000-digit integers", benchmark: "Stress test at 1,000,000 digits", demo: false, seed: 2004 },
+  im05: { name: "im05", type: "im", count: "10⁶ × 10 digits", scale: "10⁶ × 10 digits", desc: "1,000,000 digits multiplied by 10 digits", benchmark: "Heavily asymmetric digit lengths", demo: false, seed: 2005 },
+  im06: { name: "im06", type: "im", count: "100,000 digits", scale: "10⁵ digits", desc: "First number is all 9s ('9' × 100,000)", benchmark: "Carry propagation and high-density arithmetic", demo: false, seed: 2006 },
+  im07: { name: "im07", type: "im", count: "99,999 digits", scale: "99,999 digits", desc: "Odd length digits with 90% zeros", benchmark: "Odd splitting boundary and sparse zero multiplication", demo: false, seed: 2007 },
+  im08: { name: "im08", type: "im", count: "1,000,000 digits", scale: "10⁶ digits", desc: "Both numbers are powers of 10 (10⁹⁹⁹⁹⁹⁹)", benchmark: "Extreme power-of-10 multiplication", demo: false, seed: 2008 },
+  im09: { name: "im09", type: "im", count: "10⁶ × 0 digits", scale: "10⁶ digits", desc: "One number is 0, other has 1,000,000 digits", benchmark: "Zero-multiplication identity and edge case", demo: false, seed: 2009 },
+  im10: { name: "im10", type: "im", count: "101 digits", scale: "101 digits", desc: "101 random digit integers", benchmark: "Interactive recursion tree step-by-step demo", demo: true, seed: 2010 }
+};
+
+const fmtTime = ms => ms >= 1000 ? (ms / 1000).toFixed(3) + " s" : ms.toFixed(3) + " ms";
+const fmtBytes = b => b >= 1048576 ? (b / 1048576).toFixed(1) + " MB" : (b / 1024).toFixed(0) + " KB";
+
+// Step stepper hook with dynamic speed control
+function useStepper(n, speedMs = 700) {
   const [i, setI] = useState(0);
   const [playing, setPlaying] = useState(false);
+
   useEffect(() => {
-    if (!playing) return;
-    const t = setInterval(() => setI(x => Math.min(x + 1, n - 1)), 700);
-    return () => clearInterval(t);
-  }, [playing, n]);
-  useEffect(() => { if (playing && i >= n - 1) setPlaying(false); }, [i, playing, n]);
+    if (!playing || n <= 0) return;
+    const timer = setInterval(() => {
+      setI(cur => {
+        if (cur >= n - 1) {
+          setPlaying(false);
+          return cur;
+        }
+        return cur + 1;
+      });
+    }, speedMs);
+    return () => clearInterval(timer);
+  }, [playing, n, speedMs]);
+
   return { i, setI, playing, setPlaying };
 }
 
-function Controls({ st, n }) {
+// Playback Controls Component (matches SS layout: Restart, Previous, Play, Next, Speed, Step X/Y)
+function PlaybackControls({ st, n, speed, setSpeed }) {
   return (
-    <div className="controls">
-      <button onClick={() => st.setI(0)}>⏮ Start</button>
-      <button onClick={() => st.setI(Math.max(0, st.i - 1))}>◀ Previous</button>
-      <button className="primary" onClick={() => st.setPlaying(!st.playing)}>{st.playing ? "⏸ Pause" : "▶ Play"}</button>
-      <button onClick={() => st.setI(Math.min(n - 1, st.i + 1))}>Next ▶</button>
-      <input type="range" min="0" max={n - 1} value={st.i} onChange={e => st.setI(+e.target.value)} />
-      <b>Step {st.i + 1} / {n}</b>
+    <div className="playback-bar">
+      <button className="control-btn" onClick={() => st.setI(0)} title="Restart to Step 1">Restart</button>
+      <button className="control-btn" onClick={() => st.setI(Math.max(0, st.i - 1))} disabled={st.i === 0}>Previous</button>
+      <button className={`control-btn ${st.playing ? "" : "play-btn"}`} onClick={() => st.setPlaying(!st.playing)}>
+        {st.playing ? "Pause" : "Play"}
+      </button>
+      <button className="control-btn" onClick={() => st.setI(Math.min(n - 1, st.i + 1))} disabled={st.i >= n - 1}>Next</button>
+      
+      <div className="speed-group">
+        <span>Speed</span>
+        <input
+          type="range"
+          min="100"
+          max="1200"
+          step="50"
+          value={1300 - speed}
+          onChange={e => setSpeed(1300 - Number(e.target.value))}
+          style={{ width: "90px", cursor: "pointer" }}
+        />
+      </div>
+
+      <div className="step-counter">
+        Step {n > 0 ? st.i + 1 : 0} / {n}
+      </div>
     </div>
   );
 }
 
-// ---------------------------------------------------------- closest pair
-function describe(s) {
+// Closest Pair Step Description
+function describeCP(s) {
   const n = s.pts.length;
-  if (s.type === "divide") return `DIVIDE: ${n} points. Sorted by x, split at x = ${s.xline.toFixed(3)} into left (Q) and right (R) halves.`;
-  if (s.type === "base") return `BASE CASE: only ${n} points, so check every pair. Best distance = ${s.d.toFixed(4)}`;
-  return `COMBINE: best of both halves is δ = ${s.delta.toFixed(4)}.\nThe strip (x within δ of the line) has ${s.strip.length} points. Each is compared with the next 7 by y (${s.tested.length} pairs tested).\n` +
-    (s.improved ? "Found a closer pair across the line! " : "No closer pair across the line. ") + `Best distance now = ${s.d.toFixed(4)}`;
+  if (s.type === "divide") {
+    return `DIVIDE: ${n} points. Sorted by x, split at median x = ${s.xline.toFixed(3)} into left half (Q) and right half (R).`;
+  }
+  if (s.type === "base") {
+    return `BASE CASE: Subproblem has ${n} points (≤ 3). Brute-force checked every pair. Best local distance = ${s.d.toFixed(4)}.`;
+  }
+  return `COMBINE: Best distance across halves is δ = ${s.delta.toFixed(4)}.\n` +
+         `Strip (|x - x_line| < δ) contains ${s.strip.length} points. Each strip point compared with at most 7 neighbors in y-order (${s.tested.length} pairs tested).\n` +
+         (s.improved ? "✓ Found a closer cross-boundary pair! " : "No closer pair found in strip. ") +
+         `Best distance δ = ${s.d.toFixed(4)}.`;
 }
 
-function CPView({ res }) {
-  const st = useStepper(res.steps.length);
+// Closest Pair Step View (Interactive SVG on dark canvas)
+function CPStepView({ res }) {
+  const [speed, setSpeed] = useState(650);
+  const st = useStepper(res.steps.length, speed);
   const s = res.steps[st.i];
   const last = st.i === res.steps.length - 1;
-  const P = res.points, S = 600, pad = 30;
+  const P = res.points;
+  const S = 600, pad = 36;
+
   const xs = P.map(p => p[0]), ys = P.map(p => p[1]);
   const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
   const sx = x => pad + (x - x0) / ((x1 - x0) || 1) * (S - 2 * pad);
   const sy = y => S - pad - (y - y0) / ((y1 - y0) || 1) * (S - 2 * pad);
-  const inSub = new Set(s.pts), inStrip = new Set(s.strip || []);
-  const pt = i => [sx(P[i][0]), sy(P[i][1])];
-  return (
-    <div className="row">
-      <div className="card">
-        <svg width={S} height={S} style={{ background: "#fff" }}>
-          {s.type === "combine" && <rect x={sx(s.xline - s.delta)} width={sx(s.xline + s.delta) - sx(s.xline - s.delta)} y="0" height={S} fill="#fff3cd" />}
-          {s.xline !== undefined && <line x1={sx(s.xline)} x2={sx(s.xline)} y1="0" y2={S} stroke="#e03131" strokeWidth="2" />}
-          {(s.tested || []).map(([a, b], k) => { const [ax, ay] = pt(a), [bx, by] = pt(b);
-            return <line key={k} x1={ax} y1={ay} x2={bx} y2={by} stroke="#9c36b5" strokeDasharray="4 3" />; })}
-          {P.map((p, i) => <circle key={i} cx={sx(p[0])} cy={sy(p[1])} r={inStrip.has(i) ? 6 : 4}
-              fill={inStrip.has(i) ? "#f08c00" : inSub.has(i) ? "#3b6df0" : "#bbb"} />)}
-          {s.pair && (() => { const [ax, ay] = pt(s.pair[0]), [bx, by] = pt(s.pair[1]);
-            return <line x1={ax} y1={ay} x2={bx} y2={by} stroke={last ? "#e03131" : "#2f9e44"} strokeWidth={last ? 5 : 3} />; })()}
-        </svg>
-        <div className="legend">
-          <span><i className="dot" style={{ background: "#3b6df0" }} />current subproblem</span>
-          <span><i className="dot" style={{ background: "#f08c00" }} />strip points</span>
-          <span><i className="dot" style={{ background: "#e03131" }} />dividing line / final pair</span>
-          <span><i className="dot" style={{ background: "#2f9e44" }} />best pair so far</span>
-          <span><i className="dot" style={{ background: "#9c36b5" }} />tested pairs</span>
-        </div>
-      </div>
-      <div style={{ flex: 1, minWidth: 320 }}>
-        <Controls st={st} n={res.steps.length} />
-        <div className="desc">{describe(s)}</div>
-        {last && <div className="desc" style={{ marginTop: 10, background: "#e9f9ee", borderColor: "#2f9e44" }}>
-          FINAL ANSWER: distance = {res.distance}{"\n"}A = ({res.a[0]}, {res.a[1]}){"\n"}B = ({res.b[0]}, {res.b[1]})</div>}
-      </div>
-    </div>
-  );
-}
 
-// ---------------------------------------------------------- Karatsuba
-function IMView({ res }) {
-  const st = useStepper(res.steps.length);
-  const shown = res.steps.slice(0, st.i + 1);
-  const endRef = useRef(null);
-  useEffect(() => { endRef.current && endRef.current.scrollIntoView({ block: "nearest" }); }, [st.i]);
-  const legend = { SPLIT: "split x, y into high and low halves", BASE: "small enough → schoolbook multiplication", COMBINE: "z2·10^2m + z1·10^m + z0" };
+  const inSub = new Set(s.pts || []);
+  const inStrip = new Set(s.strip || []);
+  const pt = idx => [sx(P[idx][0]), sy(P[idx][1])];
+
   return (
     <div>
-      <div className="card" style={{ marginBottom: 10, wordBreak: "break-all", fontFamily: "Consolas, monospace", fontSize: 12 }}>
-        x = {res.x}<br />y = {res.y}
+      <div className="canvas-container" style={{ padding: "10px" }}>
+        <svg viewBox={`0 0 ${S} ${S}`} style={{ width: "100%", maxWidth: "560px", maxHeight: "460px", background: "transparent" }}>
+          {/* Strip Highlight Zone */}
+          {s.type === "combine" && s.xline !== undefined && (
+            <rect
+              x={sx(s.xline - s.delta)}
+              width={Math.max(1, sx(s.xline + s.delta) - sx(s.xline - s.delta))}
+              y="0"
+              height={S}
+              fill="rgba(245, 158, 11, 0.12)"
+              stroke="rgba(245, 158, 11, 0.4)"
+              strokeDasharray="4 4"
+            />
+          )}
+
+          {/* Dividing Median Line */}
+          {s.xline !== undefined && (
+            <line x1={sx(s.xline)} x2={sx(s.xline)} y1="0" y2={S} stroke="#ef4444" strokeWidth="2" />
+          )}
+
+          {/* Tested Pairs in Strip */}
+          {(s.tested || []).map(([a, b], k) => {
+            const [ax, ay] = pt(a), [bx, by] = pt(b);
+            return <line key={k} x1={ax} y1={ay} x2={bx} y2={by} stroke="#c084fc" strokeWidth="1.5" strokeDasharray="4 3" />;
+          })}
+
+          {/* All Points */}
+          {P.map((p, i) => {
+            const isStrip = inStrip.has(i);
+            const isSub = inSub.has(i);
+            const fill = isStrip ? "#f59e0b" : isSub ? "#38bdf8" : "#475569";
+            const r = isStrip ? 6 : isSub ? 4.5 : 3.5;
+            return <circle key={i} cx={sx(p[0])} cy={sy(p[1])} r={r} fill={fill} />;
+          })}
+
+          {/* Best / Final Pair */}
+          {s.pair && (() => {
+            const [ax, ay] = pt(s.pair[0]), [bx, by] = pt(s.pair[1]);
+            return (
+              <g>
+                <line x1={ax} y1={ay} x2={bx} y2={by} stroke={last ? "#ef4444" : "#10b981"} strokeWidth={last ? 4.5 : 3} />
+                <circle cx={ax} cy={ay} r={last ? 6 : 4} fill={last ? "#ef4444" : "#10b981"} />
+                <circle cx={bx} cy={by} r={last ? 6 : 4} fill={last ? "#ef4444" : "#10b981"} />
+              </g>
+            );
+          })()}
+        </svg>
       </div>
-      <Controls st={st} n={res.steps.length} />
-      <div className="legend" style={{ marginBottom: 6 }}>
-        {Object.keys(legend).map(k => <span key={k}><b>{k}</b>: {legend[k]}</span>)}
+
+      <div className="legend-bar">
+        <div className="legend-item"><span className="legend-dot" style={{ background: "#38bdf8" }} />Current subproblem</div>
+        <div className="legend-item"><span className="legend-dot" style={{ background: "#f59e0b" }} />Strip points (|x - x_m| &lt; δ)</div>
+        <div className="legend-item"><span className="legend-dot" style={{ background: "#ef4444" }} />Dividing line / Final pair</div>
+        <div className="legend-item"><span className="legend-dot" style={{ background: "#10b981" }} />Best pair so far</div>
+        <div className="legend-item"><span className="legend-dot" style={{ background: "#c084fc" }} />Tested strip pairs</div>
       </div>
-      <div className="card" style={{ maxHeight: 460, overflowY: "auto" }}>
-        {shown.map((n, k) => (
-          <div key={k} ref={k === st.i ? endRef : null} className={`node ${n.kind} ${k === st.i ? "now" : ""}`}
-               style={{ marginLeft: Math.min(n.depth, 8) * 22 }}>{n.text}</div>
+
+      <PlaybackControls st={st} n={res.steps.length} speed={speed} setSpeed={setSpeed} />
+
+      <div className="desc-box">{describeCP(s)}</div>
+
+      {last && (
+        <div className="result-banner" style={{ borderLeft: "4px solid #10b981", marginTop: "10px" }}>
+          <div><span className="result-success">✓ FINAL ANSWER REACHED</span></div>
+          <div>Closest Pair: <span className="result-highlight">({res.a[0]}, {res.a[1]})</span> and <span className="result-highlight">({res.b[0]}, {res.b[1]})</span></div>
+          <div>Minimum Distance: <span className="result-highlight">{res.distance}</span> &nbsp;|&nbsp; Runtime: <span className="result-highlight">{fmtTime(res.time_ms)}</span></div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Karatsuba Step View (Interactive Recursion Tree)
+function IMStepView({ res }) {
+  const [speed, setSpeed] = useState(650);
+  const st = useStepper(res.steps.length, speed);
+  const shown = res.steps.slice(0, st.i + 1);
+  const endRef = useRef(null);
+
+  useEffect(() => {
+    if (endRef.current) {
+      endRef.current.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [st.i]);
+
+  const legend = {
+    SPLIT: "Divide x and y into high and low halves (xh, xl, yh, yl)",
+    BASE: "Base case: numbers ≤ cutoff digits → schoolbook multiplication",
+    COMBINE: "Combine 3 recursive products: z2·10^(2m) + z1·10^m + z0"
+  };
+
+  return (
+    <div>
+      <div className="result-banner" style={{ marginBottom: "12px", wordBreak: "break-all" }}>
+        <div><span style={{ color: "#94a3b8" }}>x = </span>{res.x}</div>
+        <div><span style={{ color: "#94a3b8" }}>y = </span>{res.y}</div>
+      </div>
+
+      <PlaybackControls st={st} n={res.steps.length} speed={speed} setSpeed={setSpeed} />
+
+      <div className="legend-bar" style={{ marginBottom: "10px" }}>
+        {Object.keys(legend).map(k => (
+          <div key={k} className="legend-item">
+            <span className="tag" style={{
+              background: k === "SPLIT" ? "rgba(59, 130, 246, 0.2)" : k === "BASE" ? "rgba(245, 158, 11, 0.2)" : "rgba(16, 185, 129, 0.2)",
+              color: k === "SPLIT" ? "#93c5fd" : k === "BASE" ? "#fcd34d" : "#6ee7b7"
+            }}>{k}</span>
+            <span>{legend[k]}</span>
+          </div>
         ))}
       </div>
-      {st.i === res.steps.length - 1 && <div className="desc" style={{ marginTop: 10, wordBreak: "break-all" }}>FINAL PRODUCT = {res.product}</div>}
-    </div>
-  );
-}
 
-// ---------------------------------------------------------- results
-function Summary({ res }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <div className="row" style={{ marginBottom: 14 }}>
-      <Stat k="Execution time" v={fmtTime(res.time_ms)} />
-      {res.type === "cp" ? <>
-        <Stat k="Input size" v={res.n.toLocaleString() + " points"} />
-        <Stat k="Closest distance" v={res.distance} />
-        <Stat k="Point A" v={`(${res.a[0]}, ${res.a[1]})`} />
-        <Stat k="Point B" v={`(${res.b[0]}, ${res.b[1]})`} />
-      </> : <>
-        <Stat k="Input size" v={`${res.digits[0].toLocaleString()} × ${res.digits[1].toLocaleString()} digits`} />
-        <Stat k="Product digits" v={res.product_digits.toLocaleString()} />
-        <div className="card" style={{ flex: 1, minWidth: 300 }}>
-          <div className="k" style={{ fontSize: 12, color: "#667" }}>Product (first 50 … last 50 digits)</div>
-          <div style={{ fontFamily: "Consolas, monospace", wordBreak: "break-all", margin: "6px 0" }}>{res.preview}</div>
-          <button onClick={() => { navigator.clipboard.writeText(res.preview); setCopied(true); }}>{copied ? "Copied!" : "Copy preview"}</button>{" "}
-          <a href={`/api/product/${res.name}`}><button>Download full product (.txt)</button></a>
+      <div className="tree-container">
+        {shown.map((n, idx) => (
+          <div
+            key={idx}
+            ref={idx === st.i ? endRef : null}
+            className={`tree-node ${n.kind} ${idx === st.i ? "now" : ""}`}
+            style={{ marginLeft: `${Math.min(n.depth, 7) * 20}px` }}
+          >
+            {n.text}
+          </div>
+        ))}
+      </div>
+
+      {st.i === res.steps.length - 1 && (
+        <div className="result-banner" style={{ borderLeft: "4px solid #10b981", marginTop: "12px", wordBreak: "break-all" }}>
+          <div><span className="result-success">✓ MULTIPLICATION COMPLETE</span></div>
+          <div>PRODUCT = <span className="result-highlight">{res.product}</span></div>
+          <div>Runtime: <span className="result-highlight">{fmtTime(res.time_ms)}</span></div>
         </div>
-      </>}
+      )}
     </div>
   );
 }
 
+// -------------------------------------------------------------
+// MAIN APPLICATION COMPONENT
+// -------------------------------------------------------------
 function App() {
-  const [files, setFiles] = useState([]);
-  const [name, setName] = useState("");
-  const [res, setRes] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState("");
+  const [activeTab, setActiveTab] = useState("cp"); // "cp" | "im" | "browser"
+  const [allFiles, setAllFiles] = useState([]);
+  
+  // Closest Pair state
+  const [selectedCp, setSelectedCp] = useState("cp09");
+  const [resCp, setResCp] = useState(null);
+  const [loadingCp, setLoadingCp] = useState(false);
+  const [errCp, setErrCp] = useState("");
+
+  // Karatsuba state
+  const [selectedIm, setSelectedIm] = useState("im10");
+  const [resIm, setResIm] = useState(null);
+  const [loadingIm, setLoadingIm] = useState(false);
+  const [errIm, setErrIm] = useState("");
+  const [copiedIm, setCopiedIm] = useState(false);
+
+  // Browser state
+  const [filterType, setFilterType] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedBrowserFile, setSelectedBrowserFile] = useState(null);
+
+  // Fetch file list on initial load
   useEffect(() => {
-    fetch("/api/files").then(r => r.json()).then(f => { setFiles(f); if (f.length) setName(f[0].name); })
-      .catch(() => setErr("Cannot reach the backend. Is uvicorn running?"));
+    fetch("/api/files")
+      .then(r => r.json())
+      .then(data => {
+        setAllFiles(data);
+        const cpList = data.filter(f => f.type === "cp");
+        if (cpList.length && !cpList.some(f => f.name === selectedCp)) {
+          setSelectedCp(cpList[0].name);
+        }
+        const imList = data.filter(f => f.type === "im");
+        if (imList.length && !imList.some(f => f.name === selectedIm)) {
+          setSelectedIm(imList[0].name);
+        }
+      })
+      .catch(() => {
+        setErrCp("Backend is unreachable. Please verify python server is running on port 8000.");
+      });
   }, []);
-  const run = async () => {
-    setLoading(true); setErr(""); setRes(null);
+
+  // Filtered dataset lists for respective dropdowns
+  const cpFiles = useMemo(() => allFiles.filter(f => f.type === "cp"), [allFiles]);
+  const imFiles = useMemo(() => allFiles.filter(f => f.type === "im"), [allFiles]);
+
+  // Run Closest Pair
+  const runCP = async (targetName) => {
+    const fileToRun = targetName || selectedCp;
+    if (!fileToRun) return;
+    setLoadingCp(true);
+    setErrCp("");
+    setResCp(null);
     try {
-      const r = await fetch("/api/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) });
-      if (!r.ok) throw new Error((await r.json()).detail || r.statusText);
-      setRes(await r.json());
-    } catch (e) { setErr(String(e.message || e)); }
-    setLoading(false);
+      const r = await fetch("/api/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: fileToRun })
+      });
+      if (!r.ok) {
+        const errorData = await r.json();
+        throw new Error(errorData.detail || r.statusText);
+      }
+      setResCp(await r.json());
+    } catch (e) {
+      setErrCp(String(e.message || e));
+    }
+    setLoadingCp(false);
   };
+
+  // Run Karatsuba
+  const runIM = async (targetName) => {
+    const fileToRun = targetName || selectedIm;
+    if (!fileToRun) return;
+    setLoadingIm(true);
+    setErrIm("");
+    setResIm(null);
+    setCopiedIm(false);
+    try {
+      const r = await fetch("/api/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: fileToRun })
+      });
+      if (!r.ok) {
+        const errorData = await r.json();
+        throw new Error(errorData.detail || r.statusText);
+      }
+      setResIm(await r.json());
+    } catch (e) {
+      setErrIm(String(e.message || e));
+    }
+    setLoadingIm(false);
+  };
+
+  // Quick Run trigger from Browser Tab
+  const launchFromBrowser = (file) => {
+    if (file.type === "cp") {
+      setSelectedCp(file.name);
+      setActiveTab("cp");
+      runCP(file.name);
+    } else {
+      setSelectedIm(file.name);
+      setActiveTab("im");
+      runIM(file.name);
+    }
+  };
+
+  // Browser Filtered List
+  const browserList = useMemo(() => {
+    return allFiles.filter(f => {
+      if (filterType === "cp" && f.type !== "cp") return false;
+      if (filterType === "im" && f.type !== "im") return false;
+      if (filterType === "demo") {
+        const meta = DATASET_INFO[f.name];
+        if (!meta || !meta.demo) return false;
+      }
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const meta = DATASET_INFO[f.name] || {};
+        const matchesName = f.name.toLowerCase().includes(q);
+        const matchesDesc = (meta.desc || "").toLowerCase().includes(q);
+        const matchesBench = (meta.benchmark || "").toLowerCase().includes(q);
+        if (!matchesName && !matchesDesc && !matchesBench) return false;
+      }
+      return true;
+    });
+  }, [allFiles, filterType, searchQuery]);
+
   return (
     <>
-      <header>
-        <h1>Divide &amp; Conquer Visualizer</h1>
-        <label>Input file: <select value={name} onChange={e => setName(e.target.value)}>
-          {files.map(f => <option key={f.name} value={f.name}>{f.name} ({f.type === "cp" ? "closest pair" : "Karatsuba"}, {(f.bytes / 1024).toFixed(0)} KB)</option>)}
-        </select></label>
-        <button className="primary" onClick={run} disabled={loading || !name}>{loading ? "Running…" : "Run"}</button>
-        {loading && <span>Large files can take 30 s or more, please wait.</span>}
+      {/* Mac-style Window Header Bar */}
+      <header className="window-header">
+        <div className="header-left">
+          <div className="traffic-lights">
+            <span className="traffic-dot dot-red" />
+            <span className="traffic-dot dot-yellow" />
+            <span className="traffic-dot dot-green" />
+          </div>
+          <span className="window-title">DAA Algorithm Visualizer</span>
+        </div>
+
+        {/* Navigation Tabs (Closest Pair, Karatsuba, Browser) */}
+        <div className="header-tabs">
+          <button
+            className={`tab-btn ${activeTab === "cp" ? "active" : ""}`}
+            onClick={() => setActiveTab("cp")}
+          >
+            Closest Pair
+          </button>
+          <button
+            className={`tab-btn ${activeTab === "im" ? "active" : ""}`}
+            onClick={() => setActiveTab("im")}
+          >
+            Karatsuba
+          </button>
+          <button
+            className={`tab-btn ${activeTab === "browser" ? "active" : ""}`}
+            onClick={() => setActiveTab("browser")}
+          >
+            Browser
+          </button>
+        </div>
       </header>
+
       <main>
-        {err && <div className="err">{err}</div>}
-        {!res && !loading && !err && <div className="card">Pick a file and press <b>Run</b>. Small files (≤ 300 points or digits) show step by step; large files show the result and running time.</div>}
-        {res && <>
-          <Summary res={res} />
-          {res.mode === "steps"
-            ? (res.type === "cp" ? <CPView key={res.name} res={res} /> : <IMView key={res.name} res={res} />)
-            : <div className="card">Large input ({res.mode}): step-by-step is switched off so the browser doesn’t freeze.</div>}
-        </>}
+        {/* =================================================================== */}
+        {/* TAB 1: CLOSEST PAIR (CPP)                                           */}
+        {/* =================================================================== */}
+        {activeTab === "cp" && (
+          <div>
+            <div className="algo-heading">
+              <h2>Closest Pair of Points</h2>
+              <div className="algo-subtitle">
+                <span>Divide &amp; Conquer</span>
+                <span>•</span>
+                <span>O(n log n)</span>
+                <span>•</span>
+                <span>Actual execution trace</span>
+              </div>
+            </div>
+
+            {errCp && <div className="error-alert">{errCp}</div>}
+
+            {/* Dropdown Toolbar - Only CP Files */}
+            <div className="selector-bar">
+              <label>Dataset:</label>
+              <select
+                className="dataset-select"
+                value={selectedCp}
+                onChange={e => setSelectedCp(e.target.value)}
+              >
+                {cpFiles.map(f => {
+                  const info = DATASET_INFO[f.name];
+                  const label = info ? `${f.name} — ${info.count} (${info.desc})` : `${f.name} (${fmtBytes(f.bytes)})`;
+                  return <option key={f.name} value={f.name}>{label}</option>;
+                })}
+              </select>
+            </div>
+
+            {/* Big Run Button (matching screenshot) */}
+            <button
+              className="btn-run-action"
+              onClick={() => runCP()}
+              disabled={loadingCp || !selectedCp}
+            >
+              {loadingCp ? <><span className="spinner" /> Computing Closest Pair...</> : "Run Closest Pair"}
+            </button>
+
+            {/* Status Line */}
+            <div className="status-line">
+              {loadingCp ? (
+                <span>Executing divide-and-conquer on <b>{selectedCp}</b>...</span>
+              ) : resCp ? (
+                <span><span className="badge-completed">Completed</span> • {resCp.n.toLocaleString()} points</span>
+              ) : (
+                <span><span className="badge-ready">Ready</span> • datasets/{selectedCp}.txt ({DATASET_INFO[selectedCp]?.count || "selected"})</span>
+              )}
+            </div>
+
+            {/* Visualizer Canvas & Details Card */}
+            <div className="visualizer-card">
+              {!resCp && !loadingCp && (
+                <div className="canvas-container">
+                  <div className="canvas-placeholder">
+                    Choose a dataset and click <b>Run Closest Pair</b>
+                  </div>
+                </div>
+              )}
+
+              {loadingCp && (
+                <div className="canvas-container">
+                  <div style={{ textAlign: "center", color: "#94a3b8" }}>
+                    <div className="spinner" style={{ width: "32px", height: "32px", marginBottom: "12px" }} /><br />
+                    <span>Processing points... Large datasets (10⁶ points) take 10-30 seconds.</span>
+                  </div>
+                </div>
+              )}
+
+              {resCp && (
+                <div>
+                  {resCp.mode === "steps" ? (
+                    <CPStepView key={resCp.name} res={resCp} />
+                  ) : (
+                    <div>
+                      {/* Large Dataset Summary View (matches SS layout) */}
+                      <div className="canvas-container" style={{ minHeight: "280px" }}>
+                        <div style={{ textAlign: "center", padding: "20px" }}>
+                          <div style={{ color: "#38bdf8", fontSize: "16px", fontWeight: "600", marginBottom: "6px" }}>
+                            Divide &amp; Conquer Completed Successfully
+                          </div>
+                          <div style={{ color: "#94a3b8", fontSize: "13px" }}>
+                            Processed {resCp.n.toLocaleString()} points in {fmtTime(resCp.time_ms)}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Result Line (matches SS) */}
+                      <div className="result-banner">
+                        <div>Closest pair: <span className="result-highlight">({resCp.a[0]}, {resCp.a[1]})</span> and <span className="result-highlight">({resCp.b[0]}, {resCp.b[1]})</span></div>
+                        <div>Distance: <span className="result-highlight">{resCp.distance}</span> &nbsp;&nbsp;&nbsp;&nbsp; Runtime: <span className="result-highlight">{fmtTime(resCp.time_ms)}</span></div>
+                      </div>
+
+                      {/* Large Dataset Card (matches SS) */}
+                      <div className="large-info-card">
+                        Large dataset: computation completed. Detailed animation is available for up to 300 points (e.g. <b>cp10</b>).
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* =================================================================== */}
+        {/* TAB 2: KARATSUBA INTEGER MULTIPLICATION                             */}
+        {/* =================================================================== */}
+        {activeTab === "im" && (
+          <div>
+            <div className="algo-heading">
+              <h2>Karatsuba Integer Multiplication</h2>
+              <div className="algo-subtitle">
+                <span>Divide &amp; Conquer</span>
+                <span>•</span>
+                <span>O(n^1.585)</span>
+                <span>•</span>
+                <span>Actual recursion trace</span>
+              </div>
+            </div>
+
+            {errIm && <div className="error-alert">{errIm}</div>}
+
+            {/* Dropdown Toolbar - Only IM Files */}
+            <div className="selector-bar">
+              <label>Dataset:</label>
+              <select
+                className="dataset-select"
+                value={selectedIm}
+                onChange={e => setSelectedIm(e.target.value)}
+              >
+                {imFiles.map(f => {
+                  const info = DATASET_INFO[f.name];
+                  const label = info ? `${f.name} — ${info.count} (${info.desc})` : `${f.name} (${fmtBytes(f.bytes)})`;
+                  return <option key={f.name} value={f.name}>{label}</option>;
+                })}
+              </select>
+            </div>
+
+            {/* Big Run Button */}
+            <button
+              className="btn-run-action"
+              onClick={() => runIM()}
+              disabled={loadingIm || !selectedIm}
+            >
+              {loadingIm ? <><span className="spinner" /> Multiplying with Karatsuba...</> : "Run Karatsuba"}
+            </button>
+
+            {/* Status Line */}
+            <div className="status-line">
+              {loadingIm ? (
+                <span>Executing Karatsuba multiplication on <b>{selectedIm}</b>...</span>
+              ) : resIm ? (
+                <span><span className="badge-completed">Completed</span> • {resIm.digits[0].toLocaleString()} × {resIm.digits[1].toLocaleString()} digits</span>
+              ) : (
+                <span><span className="badge-ready">Ready</span> • datasets/{selectedIm}.txt ({DATASET_INFO[selectedIm]?.count || "selected"})</span>
+              )}
+            </div>
+
+            {/* Visualizer Card */}
+            <div className="visualizer-card">
+              {!resIm && !loadingIm && (
+                <div className="canvas-container">
+                  <div className="canvas-placeholder">
+                    Choose a dataset and click <b>Run Karatsuba</b>
+                  </div>
+                </div>
+              )}
+
+              {loadingIm && (
+                <div className="canvas-container">
+                  <div style={{ textAlign: "center", color: "#94a3b8" }}>
+                    <div className="spinner" style={{ width: "32px", height: "32px", marginBottom: "12px" }} /><br />
+                    <span>Multiplying large integers... Digits of size 10⁶ may take a few seconds.</span>
+                  </div>
+                </div>
+              )}
+
+              {resIm && (
+                <div>
+                  {resIm.mode === "steps" ? (
+                    <IMStepView key={resIm.name} res={resIm} />
+                  ) : (
+                    <div>
+                      {/* Large Summary View */}
+                      <div className="result-banner" style={{ lineHeight: "1.8" }}>
+                        <div>Execution Time: <span className="result-highlight">{fmtTime(resIm.time_ms)}</span></div>
+                        <div>Input Size: <span className="result-highlight">{resIm.digits[0].toLocaleString()} × {resIm.digits[1].toLocaleString()} digits</span></div>
+                        <div>Product Digits: <span className="result-highlight">{resIm.product_digits.toLocaleString()} digits</span></div>
+                        <div style={{ marginTop: "10px", color: "#94a3b8" }}>Product Preview (first 50 … last 50 digits):</div>
+                        <div style={{ background: "#080b12", padding: "8px 12px", borderRadius: "5px", border: "1px solid #1e2638", wordBreak: "break-all", margin: "6px 0", color: "#38bdf8" }}>
+                          {resIm.preview}
+                        </div>
+                        <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
+                          <button
+                            className="control-btn"
+                            onClick={() => {
+                              navigator.clipboard.writeText(resIm.preview);
+                              setCopiedIm(true);
+                              setTimeout(() => setCopiedIm(false), 2000);
+                            }}
+                          >
+                            {copiedIm ? "✓ Copied Preview!" : "Copy preview"}
+                          </button>
+                          <a href={`/api/product/${resIm.name}`} download style={{ textDecoration: "none" }}>
+                            <button className="control-btn" style={{ background: "#1e3a8a", borderColor: "#2563eb", color: "#bfdbfe" }}>
+                              Download full product (.txt)
+                            </button>
+                          </a>
+                        </div>
+                      </div>
+
+                      <div className="large-info-card">
+                        Large dataset: computation completed. Detailed recursion animation is available for up to 300 digits (e.g. <b>im10</b>).
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* =================================================================== */}
+        {/* TAB 3: DATASET BROWSER                                              */}
+        {/* =================================================================== */}
+        {activeTab === "browser" && (
+          <div>
+            <div className="browser-header">
+              <h2>Dataset &amp; Algorithm Browser</h2>
+              <div className="algo-subtitle">
+                <span>Explore all 20 benchmark datasets, input files, scale properties, and launch visualizer tests</span>
+              </div>
+            </div>
+
+            {/* Quick Metrics Cards */}
+            <div className="browser-stats">
+              <div className="stat-card">
+                <div className="stat-label">Total Datasets</div>
+                <div className="stat-val">{allFiles.length || 20}</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-label">Closest Pair (CPP)</div>
+                <div className="stat-val">{cpFiles.length || 10}</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-label">Karatsuba Multiplication</div>
+                <div className="stat-val">{imFiles.length || 10}</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-label">Interactive Animation Ready</div>
+                <div className="stat-val" style={{ color: "#fbbf24" }}>2 (cp10, im10)</div>
+              </div>
+            </div>
+
+            {/* Filter & Search Toolbar */}
+            <div className="browser-toolbar">
+              <div className="filter-pills">
+                <button
+                  className={`pill-btn ${filterType === "all" ? "active" : ""}`}
+                  onClick={() => setFilterType("all")}
+                >
+                  All ({allFiles.length})
+                </button>
+                <button
+                  className={`pill-btn ${filterType === "cp" ? "active" : ""}`}
+                  onClick={() => setFilterType("cp")}
+                >
+                  Closest Pair ({cpFiles.length})
+                </button>
+                <button
+                  className={`pill-btn ${filterType === "im" ? "active" : ""}`}
+                  onClick={() => setFilterType("im")}
+                >
+                  Karatsuba ({imFiles.length})
+                </button>
+                <button
+                  className={`pill-btn ${filterType === "demo" ? "active" : ""}`}
+                  onClick={() => setFilterType("demo")}
+                >
+                  Demo Files (2)
+                </button>
+              </div>
+
+              <input
+                type="text"
+                className="search-box"
+                placeholder="Search datasets by name or scenario..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+              />
+            </div>
+
+            {/* Datasets Table */}
+            <div className="table-responsive">
+              <table className="dataset-table">
+                <thead>
+                  <tr>
+                    <th>File</th>
+                    <th>Algorithm</th>
+                    <th>Items</th>
+                    <th>File Size</th>
+                    <th>Benchmark Scenario / Test Purpose</th>
+                    <th>Mode</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {browserList.map(f => {
+                    const info = DATASET_INFO[f.name] || {};
+                    return (
+                      <tr key={f.name}>
+                        <td style={{ fontWeight: "700", color: "#f8fafc", fontFamily: "monospace" }}>
+                          {f.name}
+                        </td>
+                        <td>
+                          <span className={`tag ${f.type === "cp" ? "tag-cp" : "tag-im"}`}>
+                            {f.type === "cp" ? "Closest Pair (CPP)" : "Karatsuba"}
+                          </span>
+                        </td>
+                        <td style={{ whiteSpace: "nowrap" }}>{info.count || "-"}</td>
+                        <td style={{ whiteSpace: "nowrap", color: "#94a3b8" }}>{fmtBytes(f.bytes)}</td>
+                        <td>
+                          <div style={{ color: "#e2e8f0" }}>{info.desc || "-"}</div>
+                          <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>{info.benchmark}</div>
+                        </td>
+                        <td>
+                          {info.demo ? (
+                            <span className="tag tag-demo">★ Step Demo</span>
+                          ) : (
+                            <span style={{ fontSize: "12px", color: "#64748b" }}>Summary</span>
+                          )}
+                        </td>
+                        <td>
+                          <button
+                            className="btn-run-sm"
+                            onClick={() => launchFromBrowser(f)}
+                          >
+                            Run Visualizer ▶
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {browserList.length === 0 && (
+                    <tr>
+                      <td colSpan="7" style={{ textAlign: "center", padding: "30px", color: "#64748b" }}>
+                        No datasets matched your search query.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Algorithm Theory Reference Section */}
+            <div className="theory-card">
+              <h3 style={{ margin: "0 0 4px 0", color: "#f8fafc", fontSize: "17px" }}>Algorithmic Foundations &amp; Complexity</h3>
+              <div style={{ fontSize: "13px", color: "#94a3b8" }}>Divide-and-Conquer paradigms implemented in this project</div>
+
+              <div className="theory-grid">
+                <div className="theory-box">
+                  <h4>1. Closest Pair of Points (2-D)</h4>
+                  <p>
+                    Finds two points with minimum Euclidean distance in 2D space. Recursively partitions points by median x-coordinate, solves both halves, and checks the boundary strip around the dividing line. Each strip point is compared with at most 7 neighbors in y-order.
+                  </p>
+                  <div className="formula-badge">Recurrence: T(n) = 2T(n/2) + O(n) → O(n log n)</div>
+                </div>
+
+                <div className="theory-box">
+                  <h4>2. Karatsuba Integer Multiplication</h4>
+                  <p>
+                    Multiplies two n-digit numbers using 3 recursive subproblems instead of 4:
+                    z2 = xh·yh, z0 = xl·yl, and z1 = (xh+xl)·(yh+yl) - z2 - z0. Recombines as z2·10^(2m) + z1·10^m + z0. Reduces asymptotic complexity below O(n²).
+                  </p>
+                  <div className="formula-badge">Recurrence: T(n) = 3T(n/2) + O(n) → O(n^1.585)</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </>
   );
 }
+
 ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 </script>
 </body>
