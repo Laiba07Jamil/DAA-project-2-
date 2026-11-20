@@ -1,0 +1,22 @@
+\begin{tikzpicture}[
+  node distance=3mm and 6mm,
+  box/.style={draw, rounded corners=2pt, align=center, font=\footnotesize, minimum height=8mm, inner sep=2pt, fill=blue!6},
+  data/.style={box, fill=orange!12},
+  ui/.style={box, fill=green!10},
+  arr/.style={-{Stealth[length=2mm]}, thick}]
+\node[data] (gen) {\texttt{generator.py}\\seeded, 20 files};
+\node[data, right=of gen] (ds) {\texttt{datasets/}\\cp01--cp10\\im01--im10};
+\node[box, right=of ds, text width=2.6cm] (api) {\textbf{FastAPI server}\\\texttt{/api/files}\\\texttt{/api/run}\\\texttt{/api/product}};
+\node[box, below=of api, text width=2.9cm] (alg) {\textbf{algorithms.py}\\closest pair $O(n\log n)$\\Karatsuba $O(n^{1.585})$};
+\node[ui, right=7mm of api, text width=2.7cm] (ui) {\textbf{React UI}\\tabs: Closest Pair,\\Karatsuba, Browser};
+\node[ui, below=of ui, text width=2.7cm] (out) {Step mode ($\le$300 items)\\or result + time\\(large inputs)};
+\node[box, below=of ds, text width=2.2cm] (run) {\texttt{run\_all.py}\\batch benchmark};
+\draw[arr] (gen) -- (ds);
+\draw[arr] (ds) -- (api);
+\draw[arr] (api) -- (alg);
+\draw[arr] (alg.east) -| ([xshift=-3mm]out.west) -- (out.west);
+\draw[arr] (api) -- node[above, font=\scriptsize]{JSON} (ui);
+\draw[arr] (ui) -- (out);
+\draw[arr] (ds) -- (run);
+\draw[arr] (run) -- (alg);
+\end{tikzpicture}
